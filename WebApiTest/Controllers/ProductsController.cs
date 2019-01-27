@@ -1,43 +1,76 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
+using System.Data.Entity;
+using System.Data.Entity.Infrastructure;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Threading.Tasks;
 using System.Web.Http;
+using System.Web.Http.Description;
 using WebApiTest.Models;
 
 namespace WebApiTest.Controllers
 {
     public class ProductsController : ApiController
     {
+        private ProductDbContext db = new ProductDbContext();
 
-        static List<Product> _products = new List<Product>()
+       
+
+        public IEnumerable<Product> Get()
         {
 
-            new Product(){Id=0,price="150",productName="Laptop"},
-            new Product(){Id=1,price="300",productName="xbox"},
-        };
-
-        public IHttpActionResult Get()
-        {
-            return Ok(_products);
+            return db.Products;
         }
 
-        public HttpResponseMessage Post([FromBody]Product product)
+        public IHttpActionResult Post(Product product)
         {
-            _products.Add(product);
 
-            return new HttpResponseMessage(HttpStatusCode.Created);
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            db.Products.Add(product);
+            db.SaveChanges();
+            return StatusCode(HttpStatusCode.Created);
         }
 
-        public void Put(int id,[FromBody]Product product)
+        public IHttpActionResult Put(int id,Product product)
         {
-            _products[id] = product;
+            if (!ModelState.IsValid)
+            {
+
+                return BadRequest(ModelState);
+            }
+
+            var result = db.Products.FirstOrDefault(productId => product.Id == id);
+
+            if (result == null)
+            {
+
+                return BadRequest("No records found on this id");
+            }
+
+            result.productName = product.productName;
+            result.price = product.price;
+            db.SaveChanges();
+            return Ok("The records has been updated...");
         }
 
-        public void Delete(int id)
+        public IHttpActionResult Delete(int id)
         {
-            _products.RemoveAt(id);
+            var result = db.Products.Find(id);
+            if (result == null)
+            {
+                return NotFound();
+            }
+
+            db.Products.Remove(result);
+            db.SaveChanges();
+            return Ok("Deleted suceesfully...");
         }
     }
 }
